@@ -738,7 +738,7 @@
       .add(() => scramble($(".hero-tag [data-scramble]")), 0)
       .from(split.chars, { yPercent: 120, rotate: 6, duration: 1.3, stagger: 0.018 }, 0.1)
       .from(".hero-sub", { y: 30, autoAlpha: 0, duration: 1.1 }, 0.55)
-      .from(".signup-hero", { y: 30, autoAlpha: 0, duration: 1.1 }, 0.7)
+      .from(".hero-dl", { y: 30, autoAlpha: 0, duration: 1.1 }, 0.7)
       .from(".hero-meta", { autoAlpha: 0, duration: 0.9 }, 0.95)
       .from(".ticker", { yPercent: 100, duration: 1.1 }, 0.6)
       .add(() => titleWave(split), 1.9);
@@ -1042,7 +1042,7 @@
     const tl = gsap.timeline({ scrollTrigger: { trigger: ".cta", start: "top 60%", once: true } });
     tl.from(".cta-mark", { scale: 0, rotate: -180, duration: 1.4, ease: "expo.out" }, 0)
       .from(".cta-sub", { y: 24, autoAlpha: 0, duration: 1, ease: "power3.out" }, 0.5)
-      .from(".signup-cta", { y: 24, autoAlpha: 0, duration: 1, ease: "power3.out" }, 0.65);
+      .from(".cta-dl", { y: 24, autoAlpha: 0, duration: 1, ease: "power3.out" }, 0.65);
     gsap.to(".cta-mark", { rotate: 90, ease: "none", scrollTrigger: { trigger: ".cta", start: "top bottom", end: "bottom top", scrub: true } });
   }
 

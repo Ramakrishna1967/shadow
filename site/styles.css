@@ -843,3 +843,15 @@ kbd {
 .hero { transition: border-radius .6s var(--ease); will-change: transform; }
 .hero.is-card { border-radius: 28px; }
 .ticker-track, .msgs, .trust-track { backface-visibility: hidden; }
+
+/* download */
+.btn-win { width: 16px; height: 16px; flex: none; }
+.hero-dl { margin-top: 36px; }
+.cta-dl { margin-top: 36px; display: flex; justify-content: center; }
+.download .dl-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(28px, 5vw, 72px); max-width: 1040px; margin: 0 auto; padding: clamp(28px, 4vw, 56px); border: 1px solid var(--line); background: var(--panel); }
+.dl-main { display: grid; align-content: start; justify-items: start; gap: 18px; }
+.dl-meta { margin: 0; color: var(--muted); font-size: 0.8125rem; line-height: 1.6; }
+.dl-notes h3 { margin: 0 0 6px; font-size: 1rem; font-weight: 600; }
+.dl-notes h3:not(:first-child) { margin-top: 22px; }
+.dl-notes p { margin: 0; color: var(--fg-2); line-height: 1.65; }
+@media (max-width: 800px) { .download .dl-card { grid-template-columns: 1fr; } }

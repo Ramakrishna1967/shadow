@@ -52,8 +52,9 @@
       <a href="#how"><span class="roll"><span>How it works</span></span></a>
       <a href="#trust"><span class="roll"><span>Trust</span></span></a>
       <a href="#faq"><span class="roll"><span>FAQ</span></span></a>
+      <a href="#download"><span class="roll"><span>Download</span></span></a>
     </nav>
-    <a class="btn btn-chamfer btn-dark" href="#signup" data-magnetic><span>Join waitlist</span></a>
+    <a class="btn btn-chamfer btn-dark" href="https://github.com/ramakrishna1967/shadow-releases/releases/latest/download/SHADOW-Setup.exe" data-dl data-magnetic><svg class="btn-win" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M0 2.3 6.5 1.4v6.2H0zM7.3 1.3 16 0v7.6H7.3zM0 8.4h6.5v6.2L0 13.7zM7.3 8.4H16V16l-8.7-1.2z"/></svg><span>Download</span></a>
   </header>
 
   <main id="main">
@@ -69,18 +70,9 @@
         <h1 class="hero-title" data-hide>Agents for your PC.</h1>
         <p class="hero-sub" data-hide>Deploy desktop agents for files, terminal, browser and screen. They run on your machine with your own model keys, and they ask before they act.</p>
 
-        <form class="signup signup-hero" data-hide novalidate>
-          <label class="sr-only" for="email-hero">Email address</label>
-          <div class="signup-row">
-            <input id="email-hero" name="email" type="email" autocomplete="email" placeholder="you@company.dev" required aria-describedby="msg-hero">
-            <input class="hp" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <button class="btn btn-chamfer btn-dark" type="submit" data-magnetic>
-              <span class="btn-label">Join waitlist</span>
-              <svg class="btn-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
-            </button>
-          </div>
-          <p class="signup-msg" id="msg-hero" role="status" aria-live="polite"></p>
-        </form>
+        <div class="hero-dl" data-hide>
+          <a class="btn btn-chamfer btn-dark" href="https://github.com/ramakrishna1967/shadow-releases/releases/latest/download/SHADOW-Setup.exe" data-dl data-magnetic><svg class="btn-win" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M0 2.3 6.5 1.4v6.2H0zM7.3 1.3 16 0v7.6H7.3zM0 8.4h6.5v6.2L0 13.7zM7.3 8.4H16V16l-8.7-1.2z"/></svg><span class="btn-label">Download for Windows</span></a>
+        </div>
         <p class="hero-meta mono" data-hide>Runs on your machine · Your own model keys · Windows 11</p>
       </div>
 
@@ -718,25 +710,41 @@
       </div>
     </section>
 
+    <!-- DOWNLOAD -->
+    <section class="section download" id="download" aria-labelledby="download-title" data-ready="false">
+      <div class="wrap">
+        <header class="sec-head">
+          <p class="tag"><svg class="tag-ico" viewBox="0 0 12 12" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" fill="currentColor"/><rect x="1.5" y="1.5" width="7" height="7" fill="none" stroke="currentColor"/></svg><span>DOWNLOAD</span></p>
+          <h2 id="download-title" data-split>Get SHADOW for Windows.</h2>
+          <p class="sec-sub">Free early version. Bring your own API keys. Everything runs on your computer.</p>
+        </header>
+        <div class="dl-card">
+          <div class="dl-main">
+            <a class="btn btn-chamfer btn-light" id="dl-button" href="https://github.com/ramakrishna1967/shadow-releases/releases/latest/download/SHADOW-Setup.exe" data-magnetic><svg class="btn-win" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M0 2.3 6.5 1.4v6.2H0zM7.3 1.3 16 0v7.6H7.3zM0 8.4h6.5v6.2L0 13.7zM7.3 8.4H16V16l-8.7-1.2z"/></svg><span class="btn-label">Download for Windows</span></a>
+            <p class="dl-meta mono">Free early access</p>
+          </div>
+          <div class="dl-notes">
+            <h3>A crew that works while you don't</h3>
+            <p>Hand off files, terminal, browser and screen work to agents that plan the job and finish it in the background.</p>
+            <h3>Nothing happens without your yes</h3>
+            <p>Every action that matters waits for one tap from you. You see what it will do before it does it.</p>
+            <h3>Yours, end to end</h3>
+            <p>Runs on your PC with your own model keys. No account, no cloud of ours, nothing leaves without your approval.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- CLOSING CTA -->
-    <section class="cta" id="signup" aria-labelledby="cta-title">
+    <section class="cta" id="get" aria-labelledby="cta-title">
       <canvas class="cta-mesh" aria-hidden="true"></canvas>
       <div class="wrap cta-inner">
         <svg class="cta-mark" viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="9" width="18" height="18" fill="currentColor"/><rect x="5" y="5" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"/></svg>
         <h2 id="cta-title" class="cta-title" data-split>Put agents to work. Stay in charge.</h2>
-        <p class="cta-sub">Join the waitlist. One email when early access opens. No spam.</p>
-        <form class="signup signup-cta" novalidate>
-          <label class="sr-only" for="email-cta">Email address</label>
-          <div class="signup-row">
-            <input id="email-cta" name="email" type="email" autocomplete="email" placeholder="you@company.dev" required aria-describedby="msg-cta">
-            <input class="hp" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
-            <button class="btn btn-chamfer btn-light" type="submit" data-magnetic>
-              <span class="btn-label">Join waitlist</span>
-              <svg class="btn-arrow" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
-            </button>
-          </div>
-          <p class="signup-msg" id="msg-cta" role="status" aria-live="polite"></p>
-        </form>
+        <p class="cta-sub">Free early version for Windows. Bring your own API keys.</p>
+        <div class="cta-dl">
+          <a class="btn btn-chamfer btn-light" href="https://github.com/ramakrishna1967/shadow-releases/releases/latest/download/SHADOW-Setup.exe" data-dl data-magnetic><svg class="btn-win" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M0 2.3 6.5 1.4v6.2H0zM7.3 1.3 16 0v7.6H7.3zM0 8.4h6.5v6.2L0 13.7zM7.3 8.4H16V16l-8.7-1.2z"/></svg><span class="btn-label">Download for Windows</span></a>
+        </div>
       </div>
     </section>
   </main>
@@ -751,7 +759,7 @@
         <p class="footer-tag">Desktop agents for Windows.</p>
       </div>
       <div><p class="mono footer-k">PRODUCT</p><a href="#demo">Demo</a><a href="#how">How it works</a><a href="#tools">Tools</a><a href="#faq">FAQ</a></div>
-      <div><p class="mono footer-k">TRUST</p><a href="#trust">Principles</a><a href="#signup">Waitlist</a></div>
+      <div><p class="mono footer-k">TRUST</p><a href="#trust">Principles</a><a href="#download">Download</a></div>
     </div>
     <div class="footer-mark" aria-hidden="true">SHADOW</div>
     <div class="wrap footer-base mono"><span>© 2026 SHADOW</span><span>Runs on your PC.</span></div>
@@ -763,5 +771,6 @@
   <script src="vendor/MotionPathPlugin.min.js" defer></script>
   <script src="vendor/lenis.min.js" defer></script>
   <script src="app.js" defer></script>
+  <script src="download.js" defer></script>
 </body>
 </html>
