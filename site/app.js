@@ -317,11 +317,11 @@
     const hero = $(".hero");
     const c = $(".hero-field");
     const ctx = c.getContext("2d");
-    const GAP = 26, R = 150, R2 = R * R;
+    const GAP = 32, R = 150, R2 = R * R;
     let w = 0, h = 0, pts = [], mx = -9999, my = -9999, t = 0, running = false;
 
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = 1; // full-res dots cost frames and look the same;
       w = c.clientWidth; h = c.clientHeight;
       c.width = w * dpr; c.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -668,7 +668,7 @@
   /* ------------------------------------------------------------------ */
 
   function initMotion() {
-    const lenis = new Lenis({ lerp: 0.085, smoothWheel: true });
+    const lenis = new Lenis({ lerp: 0.14, smoothWheel: true });
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add((time) => lenis.raf(time * 1000));
     gsap.ticker.lagSmoothing(0);
