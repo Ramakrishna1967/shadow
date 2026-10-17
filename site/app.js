@@ -11,13 +11,20 @@
   const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
   const $ = (s, el = document) => el.querySelector(s);
   const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+  const motionOK = () => !!window.gsap && !reduce;
 
+  // Interactive parts that must work with or without GSAP.
   initSignup();
+  initTry();
+  initSkills();
+  buildClockTicks();
   navTheme();
 
   if (!window.gsap || !window.ScrollTrigger || !window.SplitText) {
     root.classList.remove("boot-on");
     $$("[data-hide]").forEach((el) => { el.style.visibility = "visible"; });
+    $$(".scene")[0].style.visibility = "visible";
+    initDeskToggle(null);
     return;
   }
 
@@ -65,111 +72,201 @@
     return gsap.to(paths, { strokeDashoffset: 0, ease: "power2.inOut", ...vars });
   }
 
-  // Run a canvas loop only while its element is on screen.
+  // Run a loop only while its element is on screen.
   function whileVisible(el, onChange) {
     const io = new IntersectionObserver(([e]) => onChange(e.isIntersecting), { rootMargin: "100px" });
     io.observe(el);
   }
 
   /* ------------------------------------------------------------------ */
-  /* Demo timeline (shared by motion and static modes)                    */
+  /* Demo: the SHADOW app. Click any chat; approvals wait for your click   */
   /* ------------------------------------------------------------------ */
 
-  const STEP_TEXT = [
-    "A Sentry error, a matching issue and your open editor point to the same task.",
-    "SHADOW makes the change in its own worktree, inside a sandbox. Your checkout stays untouched.",
-    "Tests and a scan run in the sandbox. The proof goes onto one card.",
-    "You tap approve. The daemon opens the pull request once, from outside the sandbox.",
+  const SCENE_TEXT = [
+    "The agent writes a plan first. Nothing runs until you approve it. Click the button yourself.",
+    "Risky steps ask again with the exact action. One sentence turns the job into a weekly routine.",
+    "Every terminal command shows before it runs. The pull request opens only after your tap, once.",
+    "Writes stay inside folders you granted. Nothing is posted anywhere without you.",
+    "Agents work as a team in one chat. Each hand-off between them asked you first.",
   ];
-  const STEP_AT = [0, 3.2, 6, 8.2, 10.4]; // start of each step, last value = end
-  const SIG_X = [70, 250, 110, 210, 150, 180]; // problem-diagram signal columns
+  const SCENE_HEAD = [["R", "av-1", "Research"], ["F", "av-2", "File Organizer"], ["C", "av-3", "Code Agent"], ["W", "av-4", "Report Writer"], ["G", "av-4", "Launch crew"]];
+  const ASK_IDLE_MS = 4500; // a visitor who has not clicked anything sees the approval happen anyway
+  const NEXT_CHAT_MS = 2800; // pause before the tour moves to the next chat
+  const MAX_ADDED = 6; // typed preview messages kept in one chat; older ones are removed
+  const SIG_X = [70, 250, 110, 210, 150, 180]; // problem-diagram chore columns
 
-  function buildDemo() {
-    const win = $(".win");
-    const feed = $(".feed", win);
-    const list = $(".feed-list", win);
-    const evs = $$(".ev", win);
-    const runL = $$(".run-l", win);
-    const addLines = $$(".ln.add", win);
-    const apB = $(".ap-b", win);
-    const overflow = () => Math.max(0, list.scrollHeight - feed.clientHeight);
+  // One timeline per chat. Approval buttons pause the timeline until clicked.
+  function buildDemo(animate) {
+    const win = $(".win"), body = $(".chat-body", win);
+    const scenes = $$(".scene", win);
+    const tabs = $$(".step"), rows = $$(".row[data-scene]");
+    const fills = tabs.map((tab) => $(".step-fill", tab));
+    const num = $(".step-num"), text = $(".step-text");
+    const headAv = $("[data-head-av]"), headName = $("[data-head-name]");
+    const form = $(".chat-input"), input = $(".ci-text");
+    let current = -1, auto = animate, visible = false, hidPaused = false;
+    let nextTimer = 0, idleTimer = 0, disarm = null;
 
-    gsap.set([...evs, $(".predict", win), ...runL, $(".proof", win)], { autoAlpha: 0, y: 16 });
-    gsap.set(addLines, { height: 0 });
-    gsap.set(addLines.map((l) => $("code", l)), { clipPath: "inset(0 100% 0 0)" });
-    gsap.set($(".code-note", win), { autoAlpha: 0, y: 8 });
-    gsap.set($(".toast", win), { autoAlpha: 0, y: 24 });
-    gsap.set($(".fake-cursor", win), { x: 210, y: 64, autoAlpha: 0 });
-    gsap.set(apB, { y: 0, yPercent: 130 });
-    gsap.set($(".proof", win), { boxShadow: "0 0 0 0px rgba(143, 214, 160, 0), 0 0 0px rgba(143, 214, 160, 0)" });
+    const follow = (msgs, el) => {
+      const y = -Math.max(0, el.offsetTop + el.offsetHeight - (body.clientHeight - 48));
+      if (animate) gsap.to(msgs, { y, duration: 0.5, ease: "power2.out", overwrite: "auto" });
+      else gsap.set(msgs, { y });
+    };
 
-    const tl = gsap.timeline({ paused: true, defaults: { duration: 0.6, ease: "power3.out" } });
-    const [W, P, V, A] = STEP_AT;
-
-    // 01 Watch
-    evs.forEach((ev, i) => tl.to(ev, { autoAlpha: 1, y: 0 }, W + 0.2 + i * 0.5));
-    tl.to($(".predict", win), { autoAlpha: 1, y: 0 }, W + 1.8)
-      .to($(".conf-bar i", win), { scaleX: 0.86, duration: 1, ease: "power2.inOut" }, W + 2.1)
-      .add(countTo($(".conf-n", win), 0.86, 1, 0, 2), W + 2.1);
-
-    // 02 Prepare
-    tl.to($(".code-empty", win), { autoAlpha: 0, duration: 0.4 }, P)
-      .to(runL[0], { autoAlpha: 1, y: 0 }, P + 0.2)
-      .to(runL[1], { autoAlpha: 1, y: 0 }, P + 0.6)
-      .to($(".ln.del", win), { "--k": 1, duration: 0.5, ease: "none" }, P + 0.4);
-    addLines.forEach((line, i) => {
-      const at = P + 0.7 + i * 0.5;
-      tl.to(line, { height: "var(--lh)", duration: 0.25, ease: "power2.out" }, at)
-        .to($("code", line), { clipPath: "inset(0 0% 0 0)", duration: 0.45, ease: "none" }, at + 0.15);
-    });
-    tl.to(list, { y: () => -overflow() * 0.4, duration: 1.4, ease: "power2.inOut" }, P + 0.4);
-
-    // 03 Prove
-    tl.to(runL[2], { autoAlpha: 1, y: 0 }, V)
-      .to($(".tbar i", win), { scaleX: 1, duration: 1.2, ease: "power1.inOut" }, V + 0.2)
-      .add(countTo($(".tn", win), 14, 1.2), V + 0.2)
-      .to($(".code-note", win), { autoAlpha: 1, y: 0 }, V + 0.5)
-      .to($(".proof", win), { autoAlpha: 1, y: 0 }, V + 1.4)
-      .to(list, { y: () => -overflow(), duration: 1.6, ease: "power2.inOut" }, V + 0.6);
-
-    // 04 Approve
-    tl.to($(".fake-cursor", win), { autoAlpha: 1, duration: 0.2 }, A)
-      .to($(".fake-cursor", win), { x: 30, y: 18, duration: 0.9, ease: "power2.inOut" }, A)
-      .to($(".approve", win), { scale: 0.93, duration: 0.12, ease: "power2.in" }, A + 0.95)
-      .to($(".approve", win), { scale: 1, duration: 0.3, ease: "back.out(3)" }, A + 1.07)
-      .to($(".ap-a", win), { yPercent: -130, duration: 0.35 }, A + 1.0)
-      .to(apB, { yPercent: 0, duration: 0.35 }, A + 1.0)
-      .to($(".proof", win), { borderColor: "rgba(143, 214, 160, 0.6)", boxShadow: "0 0 0 4px rgba(143, 214, 160, 0.08), 0 0 48px rgba(143, 214, 160, 0.18)", duration: 0.5 }, A + 1.0)
-      .to($(".fake-cursor", win), { autoAlpha: 0, x: 60, y: 40, duration: 0.5 }, A + 1.4)
-      .to($(".toast", win), { autoAlpha: 1, y: 0, duration: 0.6, ease: "back.out(1.6)" }, A + 1.4)
-      .set({}, {}, STEP_AT[4]);
-
-    // Step tabs follow the playhead, whether scrubbed by scroll or playing on its own.
-    const tabs = $$(".step");
-    const fills = tabs.map((t) => $(".step-fill", t));
-    const num = $(".step-num");
-    const text = $(".step-text");
-    let current = -1;
-    tl.eventCallback("onUpdate", () => {
-      const t = tl.time();
-      let idx = 0;
-      for (let i = 0; i < 4; i++) {
-        const p = gsap.utils.clamp(0, 1, (t - STEP_AT[i]) / (STEP_AT[i + 1] - STEP_AT[i]));
-        gsap.set(fills[i], { scaleX: p });
-        if (t >= STEP_AT[i]) idx = i;
-      }
-      if (idx !== current) {
-        current = idx;
-        tabs.forEach((tab, i) => tab.setAttribute("aria-selected", String(i === idx)));
-        num.textContent = String(idx + 1).padStart(2, "0");
-        if (reduce) { text.textContent = STEP_TEXT[idx]; return; }
+    function armAsk(ask, tl) {
+      const btn = $(".ask-btn", ask), cur = $(".fake-cursor", ask);
+      const done = () => {
+        clearTimeout(idleTimer);
+        btn.removeEventListener("click", onClick);
+        btn.disabled = true;
+        ask.classList.remove("is-waiting");
+        disarm = null;
+      };
+      const go = () => { done(); tl.play(); };
+      const onClick = () => { gsap.set(cur, { autoAlpha: 0 }); go(); };
+      ask.classList.add("is-waiting");
+      btn.disabled = false;
+      btn.addEventListener("click", onClick);
+      disarm = () => { done(); gsap.set(cur, { autoAlpha: 0 }); };
+      if (!auto) return;
+      idleTimer = setTimeout(() => {
         gsap.timeline()
-          .to(text, { autoAlpha: 0, y: -8, duration: 0.18, ease: "power2.in" })
-          .call(() => { text.textContent = STEP_TEXT[idx]; })
-          .to(text, { autoAlpha: 1, y: 0, duration: 0.35, ease: "power3.out" });
-      }
+          .set(cur, { autoAlpha: 0, x: btn.offsetLeft + btn.offsetWidth + 110, y: 44 })
+          .to(cur, { autoAlpha: 1, duration: 0.15 })
+          .to(cur, { x: btn.offsetLeft + btn.offsetWidth * 0.55, y: btn.offsetTop + 12, duration: 0.7, ease: "power2.inOut" }, 0)
+          .call(() => { if (disarm) go(); })
+          .to(cur, { autoAlpha: 0, x: "+=34", y: "+=22", duration: 0.4 }, "+=0.2");
+      }, ASK_IDLE_MS);
+    }
+
+    function scheduleNext() {
+      clearTimeout(nextTimer);
+      if (auto && visible) nextTimer = setTimeout(() => show((current + 1) % scenes.length, false), NEXT_CHAT_MS);
+    }
+
+    const timelines = scenes.map((scene, si) => {
+      const msgs = $(".msgs", scene);
+      const items = Array.from(msgs.children);
+      const tl = gsap.timeline({ paused: true, defaults: { duration: 0.45, ease: "power3.out" } });
+      items.forEach((it) => gsap.set(it, { autoAlpha: 0, y: 14, scale: 0.97, transformOrigin: it.classList.contains("me") ? "100% 100%" : "0% 100%" }));
+      tl.set(msgs, { y: 0 }, 0);
+      let t = 0.25;
+      items.forEach((it) => {
+        tl.to(it, { autoAlpha: 1, y: 0, scale: 1, ease: "back.out(1.5)" }, t).call(() => follow(msgs, it), null, t + 0.05);
+        t += 0.6;
+        $$(".dl", it).forEach((dl, k) => {
+          gsap.set(dl, { clipPath: "inset(0 100% 0 0)" });
+          tl.to(dl, { clipPath: "inset(0 0% 0 0)", duration: 0.4, ease: "none" }, t - 0.3 + k * 0.25);
+        });
+        const tn = $(".tn", it);
+        if (tn) {
+          const o = { v: 0 };
+          tl.to(o, { v: 14, duration: 0.8, ease: "power2.out", onUpdate() { tn.textContent = String(Math.round(o.v)); } }, t);
+        }
+        const ask = $(".ask", it);
+        if (ask) {
+          const btn = $(".ask-btn", ask), a = $(".ab-a", ask), b = $(".ab-b", ask);
+          gsap.set(b, { y: 0, yPercent: 130 });
+          tl.addPause(t, () => armAsk(ask, tl))
+            .to(btn, { scale: 0.9, duration: 0.1, ease: "power2.in" }, t + 0.01)
+            .to(btn, { scale: 1, duration: 0.35, ease: "back.out(3)" }, t + 0.11)
+            .to(a, { yPercent: -130, duration: 0.3 }, t + 0.05)
+            .to(b, { yPercent: 0, duration: 0.3 }, t + 0.05)
+            .to(it, { borderColor: "rgba(143, 214, 160, 0.55)", boxShadow: "0 0 0 4px rgba(143, 214, 160, 0.06), 0 0 36px rgba(143, 214, 160, 0.14)", duration: 0.4 }, t + 0.05);
+          t += 0.6;
+        }
+      });
+      tl.eventCallback("onUpdate", () => gsap.set(fills[si], { scaleX: tl.progress() }));
+      tl.eventCallback("onComplete", scheduleNext);
+      return tl;
     });
-    return { tl, tabs };
+
+    function show(i, byUser) {
+      if (byUser) auto = false;
+      clearTimeout(nextTimer);
+      clearTimeout(idleTimer);
+      if (disarm) disarm();
+      $$(".msg.added", win).forEach((m) => m.remove());
+      const prev = current;
+      current = i;
+      scenes.forEach((s, k) => {
+        if (k === i) return;
+        timelines[k].pause();
+        if (k === prev && animate) gsap.to(s, { autoAlpha: 0, y: -12, duration: 0.25, overwrite: "auto" });
+        else gsap.set(s, { autoAlpha: 0 });
+      });
+      if (animate) gsap.fromTo(scenes[i], { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: 0.4, delay: prev >= 0 ? 0.15 : 0, overwrite: "auto" });
+      else gsap.set(scenes[i], { autoAlpha: 1, y: 0 });
+      fills.forEach((f) => gsap.set(f, { scaleX: 0 }));
+      tabs.forEach((tab, k) => tab.setAttribute("aria-selected", String(k === i)));
+      rows.forEach((r) => {
+        const on = Number(r.dataset.scene) === i;
+        r.classList.toggle("is-on", on);
+        if (on) r.setAttribute("aria-current", "true"); else r.removeAttribute("aria-current");
+      });
+      const [letter, cls, name] = SCENE_HEAD[i];
+      headAv.className = "av av-sm " + cls;
+      headAv.textContent = letter;
+      headName.textContent = name;
+      input.placeholder = "Message " + name;
+      num.textContent = String(i + 1).padStart(2, "0");
+      const tl = timelines[i];
+      if (!animate) {
+        text.textContent = SCENE_TEXT[i];
+        tl.progress(1);
+        gsap.set(fills[i], { scaleX: 1 });
+        const msgs = $(".msgs", scenes[i]);
+        follow(msgs, msgs.lastElementChild);
+        return;
+      }
+      gsap.fromTo(headName, { yPercent: 60, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.4, ease: "power3.out" });
+      gsap.timeline()
+        .to(text, { autoAlpha: 0, y: -8, duration: 0.18, ease: "power2.in" })
+        .call(() => { text.textContent = SCENE_TEXT[i]; })
+        .to(text, { autoAlpha: 1, y: 0, duration: 0.35, ease: "power3.out" });
+      tl.restart();
+    }
+
+    [...tabs.map((tab, i) => [tab, i]), ...rows.map((r) => [r, Number(r.dataset.scene)])]
+      .forEach(([el, i]) => el.addEventListener("click", () => show(i, true)));
+
+    // Typing in the preview gets an honest answer: nothing runs from this page.
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const txt = input.value.trim();
+      if (!txt) return;
+      input.value = "";
+      auto = false;
+      clearTimeout(nextTimer);
+      if (current < 0) show(0, true);
+      const msgs = $(".msgs", scenes[current]);
+      const add = (cls, words) => {
+        const m = document.createElement("p");
+        m.className = "msg added " + cls;
+        m.textContent = words;
+        msgs.append(m);
+        const added = $$(".msg.added", msgs);
+        while (added.length > MAX_ADDED) added.shift().remove();
+        follow(msgs, m);
+      };
+      add("me", txt);
+      const name = SCENE_HEAD[current][2];
+      setTimeout(() => add("bot", `Preview only, so nothing runs from this page. In SHADOW, ${name} would write a plan for this and ask before it acts.`), animate ? 700 : 0);
+    });
+
+    if (!animate) { show(0, false); return; }
+    new IntersectionObserver(([e]) => {
+      visible = e.isIntersecting;
+      const tl = timelines[current];
+      if (visible) {
+        if (current < 0) { show(0, false); return; }
+        if (hidPaused) { hidPaused = false; tl.resume(); }
+        else if (tl.progress() === 1) scheduleNext();
+      } else if (current >= 0) {
+        clearTimeout(nextTimer);
+        if (tl.isActive()) { tl.pause(); hidPaused = true; }
+      }
+    }, { threshold: 0.35 }).observe(win);
   }
 
   /* ------------------------------------------------------------------ */
@@ -179,17 +276,18 @@
   function buildHow(animateDots) {
     const steps = $$(".how-step");
     const groups = [
-      { nodes: [...$$(".n-src"), $(".n-mind")], paths: ["#hp1", "#hp2", "#hp3", "#hp4"] },
-      { nodes: [$(".n-box")], paths: ["#hp5"] },
-      { nodes: [$(".n-card")], paths: ["#hp6"] },
+      { nodes: [$(".n-goal"), $(".n-plan")], paths: ["#hp1"] },
+      { nodes: [$(".n-approve")], paths: ["#hp2"] },
+      { nodes: $$(".n-tool"), paths: ["#hp3", "#hp4", "#hp5", "#hp6"] },
+      { nodes: [$(".n-report")], paths: ["#hp7", "#hp8", "#hp9", "#hp10"] },
     ];
     const loops = {};
     if (animateDots) {
       $$(".how-svg .dot").forEach((dot, i) => {
         const path = dot.dataset.path;
-        loops[path] = gsap.timeline({ repeat: -1, paused: true, delay: i * 0.15 })
+        loops[path] = gsap.timeline({ repeat: -1, paused: true, delay: (i % 4) * 0.18 })
           .set(dot, { autoAlpha: 1 })
-          .to(dot, { duration: 1.3, ease: "power1.inOut", motionPath: { path, align: path, alignOrigin: [0.5, 0.5] } })
+          .to(dot, { duration: 1.2, ease: "power1.inOut", motionPath: { path, align: path, alignOrigin: [0.5, 0.5] } })
           .set(dot, { autoAlpha: 0 });
       });
     }
@@ -207,6 +305,7 @@
           if (loop) on ? loop.play() : loop.pause(0);
         });
       });
+      if (animateDots && idx === 1) gsap.fromTo(".ap-check", { strokeDasharray: 40, strokeDashoffset: 40 }, { strokeDashoffset: 0, duration: 0.6, ease: "power2.out" });
     };
   }
 
@@ -222,7 +321,7 @@
     let w = 0, h = 0, pts = [], mx = -9999, my = -9999, t = 0, running = false;
 
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       w = c.clientWidth; h = c.clientHeight;
       c.width = w * dpr; c.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -275,7 +374,7 @@
     const grid = Array.from({ length: ROWS }, () => new Float32Array(COLS * 2));
 
     function resize() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       w = c.clientWidth; h = c.clientHeight;
       c.width = w * dpr; c.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -337,26 +436,224 @@
   }
 
   /* ------------------------------------------------------------------ */
+  /* Screen control: an agent fills a form until you press the stop keys  */
+  /* ------------------------------------------------------------------ */
+
+  function initDeskToggle(loop) {
+    const screen = $(".screen"), btn = $(".key-stop"), hint = $("#desk-state");
+    const RUN_HINT = "Press the keys, or click, to stop the agent.";
+    const STOP_HINT = "Stopped. The agent does nothing more until you start it again.";
+    let stopped = false;
+    const press = () => { btn.classList.add("is-down"); setTimeout(() => btn.classList.remove("is-down"), 160); };
+    const set = (stop) => {
+      stopped = stop;
+      screen.classList.toggle("is-stopped", stop);
+      hint.textContent = stop ? STOP_HINT : RUN_HINT;
+      if (loop) stop ? loop.pause() : loop.restart();
+    };
+    btn.addEventListener("click", () => { press(); set(!stopped); });
+    $(".ov-again").addEventListener("click", () => set(false));
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey && e.altKey && e.key === "Escape") { press(); set(true); }
+    });
+    return () => stopped;
+  }
+
+  function desk(animate) {
+    const body = $(".screen-body"), cur = $(".desk-cursor");
+    const fields = $$(".screen .field");
+    const typed = $$(".screen .typed");
+    if (!animate) {
+      typed.forEach((el) => { el.textContent = el.dataset.text; });
+      gsap.set(cur, { x: 300, y: 240 });
+      initDeskToggle(null);
+      return;
+    }
+    const typeIn = (el) => {
+      const txt = el.dataset.text, o = { n: 0 };
+      return gsap.to(o, { n: txt.length, duration: txt.length * 0.07, ease: "none", onUpdate() { el.textContent = txt.slice(0, Math.round(o.n)); } });
+    };
+    const at = (el) => ({ x: el.offsetLeft + 46, y: el.offsetTop + el.offsetHeight / 2 });
+    const loop = gsap.timeline({ repeat: -1, repeatDelay: 1, paused: true })
+      .call(() => { typed.forEach((el) => { el.textContent = ""; }); fields.forEach((f) => f.classList.remove("is-focus")); })
+      .set(cur, { x: () => body.clientWidth - 60, y: () => body.clientHeight - 30 });
+    typed.forEach((el, i) => {
+      const field = fields[i];
+      loop.to(cur, { x: () => at(field).x, y: () => at(field).y, duration: 0.7, ease: "power2.inOut" })
+        .to(cur, { scale: 0.85, duration: 0.08, yoyo: true, repeat: 1 })
+        .call(() => { fields.forEach((f) => f.classList.remove("is-focus")); field.classList.add("is-focus"); })
+        .add(typeIn(el));
+    });
+    const ask = $(".sbtn-ask");
+    loop.call(() => fields.forEach((f) => f.classList.remove("is-focus")))
+      .to(cur, { x: () => ask.offsetLeft + ask.offsetWidth / 2, y: () => ask.offsetTop + ask.offsetHeight / 2, duration: 0.8, ease: "power2.inOut" })
+      .to(ask, { scale: 1.06, duration: 0.25, yoyo: true, repeat: 3, ease: "sine.inOut" })
+      .to({}, { duration: 0.6 });
+    const isStopped = initDeskToggle(loop);
+    whileVisible($(".screen"), (on) => { if (on && !isStopped()) loop.play(); else loop.pause(); });
+
+    gsap.from(".screen", { y: 60, rotateX: 10, transformPerspective: 1400, autoAlpha: 0, duration: 1.3, ease: "expo.out", scrollTrigger: { trigger: ".screen", start: "top 85%", once: true } });
+    gsap.from(".desk-list li", { x: -16, autoAlpha: 0, duration: 0.6, stagger: 0.08, ease: "power3.out", scrollTrigger: { trigger: ".desk-list", start: "top 85%", once: true } });
+    gsap.from(".key-stop kbd", { y: 20, autoAlpha: 0, duration: 0.6, stagger: 0.1, ease: "back.out(2)", scrollTrigger: { trigger: ".keys", start: "top 90%", once: true } });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Skills: roll back and revert buttons                                 */
+  /* ------------------------------------------------------------------ */
+
+  function initSkills() {
+    const note = $(".skills-note");
+    $$(".skill").forEach((card) => {
+      const btn = $(".skill-btn", card);
+      if (!btn) return;
+      const vEl = $(".skill-v b", card), dots = $$(".skill-dots i", card), name = $("h3", card).textContent;
+      btn.addEventListener("click", () => {
+        let v = Number(card.dataset.v);
+        if (v <= 1) return;
+        v -= 1;
+        card.dataset.v = String(v);
+        vEl.textContent = String(v);
+        dots[v].classList.add("off");
+        note.textContent = `${name} is back on v${v}. The change is logged, and v${v + 1} can be restored.`;
+        if (card.classList.contains("skill-flag")) {
+          card.classList.remove("skill-flag");
+          btn.textContent = "Reverted";
+          btn.disabled = true;
+        } else if (v === 1) {
+          btn.disabled = true;
+        }
+        if (motionOK()) {
+          gsap.fromTo(vEl, { yPercent: -110, autoAlpha: 0 }, { yPercent: 0, autoAlpha: 1, duration: 0.5, ease: "back.out(2.4)" });
+          gsap.fromTo(note, { y: 8, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.4, ease: "power3.out" });
+          gsap.fromTo(card, { backgroundColor: "rgba(228, 228, 225, 0.06)" }, { backgroundColor: "rgba(228, 228, 225, 0)", duration: 1.2 });
+        }
+      });
+    });
+  }
+
+  function skills() {
+    gsap.from(".skill, .skill-chart", { y: 50, autoAlpha: 0, duration: 1, ease: "expo.out", stagger: 0.1, scrollTrigger: { trigger: ".skill-grid", start: "top 80%", once: true } });
+    gsap.from(".skill-dots i", { scaleX: 0, transformOrigin: "0% 50%", duration: 0.5, stagger: 0.04, ease: "power2.out", scrollTrigger: { trigger: ".skill-grid", start: "top 75%", once: true } });
+    drawIn($$(".spark-line"), { duration: 1.8, scrollTrigger: { trigger: ".spark", start: "top 85%", once: true } });
+    gsap.from(".spark-dot", { scale: 0, transformOrigin: "50% 50%", duration: 0.6, delay: 1.6, ease: "back.out(3)", scrollTrigger: { trigger: ".spark", start: "top 85%", once: true } });
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Routines clock and group hand-offs                                   */
+  /* ------------------------------------------------------------------ */
+
+  function buildClockTicks() {
+    const g = $(".ticks");
+    if (!g) return;
+    const NS = "http://www.w3.org/2000/svg";
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2, r1 = i % 3 ? 48 : 44;
+      const l = document.createElementNS(NS, "line");
+      l.setAttribute("x1", String(60 + Math.sin(a) * r1)); l.setAttribute("y1", String(60 - Math.cos(a) * r1));
+      l.setAttribute("x2", String(60 + Math.sin(a) * 51)); l.setAttribute("y2", String(60 - Math.cos(a) * 51));
+      g.appendChild(l);
+    }
+  }
+
+  function duo() {
+    gsap.from(".duo-panel", { y: 50, autoAlpha: 0, duration: 1, ease: "expo.out", stagger: 0.15, scrollTrigger: { trigger: ".duo-grid", start: "top 80%", once: true } });
+    const loops = [
+      gsap.to(".hand-m", { rotation: 360, svgOrigin: "60 60", duration: 6, ease: "none", repeat: -1, paused: true }),
+      gsap.to(".hand-h", { rotation: 360, svgOrigin: "60 60", duration: 72, ease: "none", repeat: -1, paused: true }),
+    ];
+    const items = $$(".routines li");
+    let k = -1;
+    loops.push(gsap.timeline({ repeat: -1, paused: true }).call(() => {
+      items.forEach((li) => li.classList.remove("is-run"));
+      k = (k + 1) % items.length;
+      items[k].classList.add("is-run");
+      gsap.fromTo(items[k], { x: -6 }, { x: 0, duration: 0.5, ease: "back.out(3)" });
+    }).to({}, { duration: 2 }));
+
+    drawIn($$(".team path"), { duration: 1.4, stagger: 0.15, scrollTrigger: { trigger: ".team", start: "top 85%", once: true } });
+    gsap.from(".tnode, .tyou", { scale: 0, transformOrigin: "50% 50%", duration: 0.7, stagger: 0.1, ease: "back.out(2)", scrollTrigger: { trigger: ".team", start: "top 85%", once: true } });
+    // A hand-off: R sends to W, the message stops at YOU for approval, then goes on. Then the reply comes back.
+    const [m1, m2] = $$(".tmsg");
+    const leg = (dot, path, start, end) => gsap.timeline()
+      .set(dot, { autoAlpha: 1 })
+      .to(dot, { duration: 1, ease: "power1.inOut", motionPath: { path, align: path, alignOrigin: [0.5, 0.5], start, end } })
+      .set(dot, { autoAlpha: 0 });
+    const ask = () => gsap.timeline()
+      .to(".tbadge", { autoAlpha: 1, y: -4, duration: 0.3, ease: "back.out(2)" })
+      .to(".tyou rect", { scale: 1.12, transformOrigin: "50% 50%", duration: 0.18, yoyo: true, repeat: 3 }, "<")
+      .to(".tbadge", { autoAlpha: 0, y: 0, duration: 0.3 }, "+=0.5");
+    loops.push(gsap.timeline({ repeat: -1, repeatDelay: 0.6, paused: true })
+      .add(leg(m1, "#tp1", 0, 1)).add(ask()).add(leg(m2, "#tp2", 0, 1))
+      .to({}, { duration: 0.5 })
+      .add(leg(m2, "#tp2", 1, 0)).add(ask()).add(leg(m1, "#tp1", 1, 0)));
+    whileVisible($(".duo"), (on) => loops.forEach((l) => (on ? l.play() : l.pause())));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Trust: try-it approval card                                          */
+  /* ------------------------------------------------------------------ */
+
+  function initTry() {
+    const out = $(".try-out");
+    const RESULT = {
+      once: ["Ran once and logged. The next time, it asks again.", "is-ok"],
+      always: ["Saved: always allow this exact command for Code Agent. A deny rule would still win.", "is-ok"],
+      deny: ["Denied. The agent gets your answer and stops this step.", "is-deny"],
+    };
+    const btns = $$(".tbtn");
+    btns.forEach((b) => b.addEventListener("click", () => {
+      btns.forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      const [txt, cls] = RESULT[b.dataset.choice];
+      out.className = "try-out mono " + cls;
+      out.textContent = txt;
+      if (motionOK()) {
+        gsap.fromTo(out, { y: 8, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.35, ease: "power3.out" });
+        gsap.fromTo(b, { scale: 0.94 }, { scale: 1, duration: 0.5, ease: "back.out(3)" });
+      }
+    }));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Developer pack proof card                                            */
+  /* ------------------------------------------------------------------ */
+
+  function devpack(animate) {
+    const card = $(".devpack .proof"), a = $(".ap-a", card), b = $(".ap-b", card), n = $(".dev-n", card);
+    if (!animate) { n.textContent = "14"; gsap.set(a, { yPercent: -130 }); gsap.set(b, { y: 0, yPercent: 0 }); return; }
+    gsap.set(b, { y: 0, yPercent: 130 });
+    gsap.timeline({ scrollTrigger: { trigger: card, start: "top 80%", once: true } })
+      .from(card, { y: 60, rotateY: -12, transformPerspective: 1200, autoAlpha: 0, duration: 1.1, ease: "expo.out" })
+      .from($$(".proof-rows p", card), { x: -14, autoAlpha: 0, duration: 0.45, stagger: 0.12 }, 0.4)
+      .add(countTo(n, 14, 1), 0.7)
+      .to($(".approve", card), { scale: 0.92, duration: 0.12, ease: "power2.in" }, 1.9)
+      .to($(".approve", card), { scale: 1, duration: 0.35, ease: "back.out(3)" }, 2.02)
+      .to(a, { yPercent: -130, duration: 0.35 }, 1.95)
+      .to(b, { yPercent: 0, duration: 0.35 }, 1.95)
+      .to(card, { borderColor: "rgba(143, 214, 160, 0.6)", boxShadow: "0 0 0 4px rgba(143, 214, 160, 0.08), 0 0 48px rgba(143, 214, 160, 0.18)", duration: 0.5 }, 1.95);
+  }
+
+  /* ------------------------------------------------------------------ */
   /* Reduced motion: final states, no movement                            */
   /* ------------------------------------------------------------------ */
 
   function initStatic() {
     gsap.set("[data-hide]", { autoAlpha: 1 });
-    const { tl, tabs } = buildDemo();
-    tl.progress(1);
-    tabs.forEach((tab, i) => tab.addEventListener("click", () => tl.seek(STEP_AT[i + 1] - 0.001)));
+    buildDemo(false);
     const setHow = buildHow(false);
-    setHow(2);
+    setHow(3);
     $$(".how-step").forEach((s) => s.classList.add("is-on"));
     $$(".cmp .tl, .cmp-fast").forEach((el) => el.style.setProperty("--p", "1"));
     $$("[data-to]").forEach((el) => { el.textContent = el.dataset.to; });
     $$(".sig").forEach((s, i) => gsap.set(s, { x: SIG_X[i], y: [96, 96, 132, 132, 168, 168][i], autoAlpha: 1 }));
+    $$(".routines li")[0].classList.add("is-run");
     heroField(false);
     ctaMesh(false);
+    desk(false);
+    devpack(false);
     footerMark(false);
   }
 
-  // Giant outlined wordmark: letters rise as the footer scrolls in; each letter fills on hover.
+  // Giant wordmark: letters rise as the footer scrolls in; each letter fills on hover.
   function footerMark(animate) {
     const split = SplitText.create(".footer-mark", { type: "chars", charsClass: "char" });
     if (!animate) return;
@@ -391,16 +688,21 @@
     ticker();
     reveals();
     problem();
-    demo(lenis);
+    demo();
     compare();
     how();
     agents();
+    desk(true);
+    skills();
+    duo();
     trust();
+    devpack(true);
     numbers();
     faq();
     cta();
     ctaMesh(true);
     footerMark(true);
+    extras();
 
     window.addEventListener("load", () => ScrollTrigger.refresh());
   }
@@ -434,17 +736,68 @@
       .from(wm, { scale: 0.8, rotate: -8, autoAlpha: 0, duration: 2.4, ease: "power3.out" }, 0)
       .from(".hero-tag", { clipPath: "inset(0 100% 0 0)", duration: 0.8 }, 0)
       .add(() => scramble($(".hero-tag [data-scramble]")), 0)
-      .from(split.chars, { yPercent: 120, rotate: 6, filter: "blur(10px)", duration: 1.3, stagger: 0.022 }, 0.1)
-      .from(".hero-sub", { y: 30, autoAlpha: 0, filter: "blur(6px)", duration: 1.1 }, 0.55)
+      .from(split.chars, { yPercent: 120, rotate: 6, duration: 1.3, stagger: 0.018 }, 0.1)
+      .from(".hero-sub", { y: 30, autoAlpha: 0, duration: 1.1 }, 0.55)
       .from(".signup-hero", { y: 30, autoAlpha: 0, duration: 1.1 }, 0.7)
       .from(".hero-meta", { autoAlpha: 0, duration: 0.9 }, 0.95)
-      .from(".ticker", { yPercent: 100, duration: 1.1 }, 0.6);
+      .from(".ticker", { yPercent: 100, duration: 1.1 }, 0.6)
+      .add(() => titleWave(split), 1.9);
 
     // Leaving the hero: the light panel shrinks into a rounded card over the black page.
-    gsap.to(".hero", { scale: 0.92, borderRadius: 28, transformOrigin: "50% 100%", ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+    gsap.to(".hero", { scale: 0.92, transformOrigin: "50% 100%", ease: "none", force3D: true, scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+    ScrollTrigger.create({ trigger: ".hero", start: "top+=40 top", end: "max", toggleClass: { targets: ".hero", className: "is-card" } });
     // Text drifts up, watermark rotates away.
     gsap.to(".hero-inner", { yPercent: -16, autoAlpha: 0.15, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
     gsap.to(wm, { yPercent: -78, rotate: 14, ease: "none", scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true } });
+  }
+
+  // After the intro, re-split the title without line masks so letters can rise toward the pointer.
+  function titleWave(split) {
+    if (!finePointer) return;
+    split.revert();
+    const chars = SplitText.create(".hero-title", { type: "words,chars", charsClass: "char" }).chars;
+    const lifts = chars.map((c) => gsap.quickTo(c, "y", { duration: 0.6, ease: "power3" }));
+    const title = $(".hero-title");
+    let centers = [];
+    title.addEventListener("pointerenter", () => {
+      centers = chars.map((c) => { const r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+    });
+    title.addEventListener("pointermove", (e) => {
+      if (!centers.length) return;
+      centers.forEach(([cx, cy], i) => {
+        const d = Math.hypot(e.clientX - cx, (e.clientY - cy) * 0.6);
+        lifts[i](-Math.max(0, 1 - d / 170) * 16);
+      });
+    });
+    title.addEventListener("pointerleave", () => lifts.forEach((f) => f(0)));
+  }
+
+  // Extra motion on top of each section: drawn divider lines, label scrambles, pointer tilt on the app windows.
+  function extras() {
+    $$(".section + .section, .cta").forEach((sec) => gsap.fromTo(sec, { "--ln": 0 }, {
+      "--ln": 1, ease: "none", scrollTrigger: { trigger: sec, start: "top 98%", end: "top 40%", scrub: true },
+    }));
+
+    $$(".card-k span:first-child, .skill-k span:first-child, .cmp-k span:first-child, .how-k, .tp-n, .qa-n, .stack-k, .footer-k").forEach((el) =>
+      ScrollTrigger.create({ trigger: el, start: "top 92%", once: true, onEnter: () => scramble(el, 0.7) }));
+
+    gsap.from(".hero-watermark rect", { strokeDasharray: 80, strokeDashoffset: 80, duration: 3, ease: "power2.inOut", stagger: 0.4, delay: 0.4 });
+
+    if (!finePointer) return;
+    $$(".screen, .try, .devpack .proof").forEach((el) => {
+      let rx, ry; // created on first move so they never fight the entrance tweens
+      el.addEventListener("pointermove", (e) => {
+        if (!rx) {
+          gsap.set(el, { transformPerspective: 1400 });
+          rx = gsap.quickTo(el, "rotationX", { duration: 0.9, ease: "power3" });
+          ry = gsap.quickTo(el, "rotationY", { duration: 0.9, ease: "power3" });
+        }
+        const r = el.getBoundingClientRect();
+        ry(((e.clientX - r.left) / r.width - 0.5) * 5);
+        rx(-((e.clientY - r.top) / r.height - 0.5) * 4);
+      });
+      el.addEventListener("pointerleave", () => { if (rx) { rx(0); ry(0); } });
+    });
   }
 
   function chrome() {
@@ -461,16 +814,13 @@
     gsap.set(cur, { autoAlpha: 0 });
     window.addEventListener("pointermove", () => gsap.to(cur, { autoAlpha: 1, duration: 0.3 }), { once: true });
     window.addEventListener("pointermove", (e) => { dx(e.clientX); dy(e.clientY); rx(e.clientX); ry(e.clientY); }, { passive: true });
-    const wide = window.matchMedia("(min-width: 901px)");
     document.addEventListener("pointerover", (e) => {
-      const interactive = !!e.target.closest("a, button, summary, input, [data-magnetic]");
-      // Over the pinned demo the ring says "scroll": scrolling is what drives it.
-      cur.classList.toggle("is-label", wide.matches && !interactive && !!e.target.closest(".win"));
-      cur.classList.toggle("is-hover", interactive);
+      cur.classList.toggle("is-hover", !!e.target.closest("a, button, summary, input, [data-magnetic]"));
     });
 
-    $$(".card, .tp, .cmp-panel, .agent").forEach((el) => {
+    $$(".card, .tp, .cmp-panel, .agent, .skill, .duo-panel, .try").forEach((el) => {
       el.classList.add("spot");
+      if (getComputedStyle(el).position === "static") el.style.position = "relative";
       el.addEventListener("pointermove", (e) => {
         const r = el.getBoundingClientRect();
         el.style.setProperty("--mx", e.clientX - r.left + "px");
@@ -496,16 +846,20 @@
     const track = $(".ticker-track");
     const loop = gsap.to(track, { xPercent: -50, ease: "none", duration: 40, repeat: -1 });
     const skewTo = gsap.quickTo(track, "skewX", { duration: 0.4, ease: "power3" });
+    const speed = { v: 1 };
+    const speedTo = gsap.quickTo(speed, "v", { duration: 0.4, ease: "power3", onUpdate: () => loop.timeScale(speed.v) });
     let idle;
     ScrollTrigger.create({
+      trigger: ".hero", start: "top top", end: "bottom top",
       onUpdate(self) {
         const v = self.getVelocity();
-        gsap.to(loop, { timeScale: gsap.utils.clamp(-5, 5, 1 + v / 500), duration: 0.2, overwrite: true });
+        speedTo(gsap.utils.clamp(-5, 5, 1 + v / 500));
         skewTo(gsap.utils.clamp(-10, 10, -v / 220));
         clearTimeout(idle);
-        idle = setTimeout(() => { gsap.to(loop, { timeScale: 1, duration: 0.9, overwrite: true }); skewTo(0); }, 140);
+        idle = setTimeout(() => { speedTo(1); skewTo(0); }, 140);
       },
     });
+    whileVisible($(".ticker"), (on) => (on ? loop.play() : loop.pause()));
   }
 
   function reveals() {
@@ -529,8 +883,8 @@
       });
     });
 
-    $$(".sec-sub").forEach((el) => gsap.from(el, {
-      y: 28, autoAlpha: 0, filter: "blur(6px)", duration: 1.1, ease: "power3.out",
+    $$(".sec-sub, .desk-p").forEach((el) => gsap.from(el, {
+      y: 28, autoAlpha: 0, duration: 1.1, ease: "power3.out",
       scrollTrigger: { trigger: el, start: "top 88%", once: true },
     }));
   }
@@ -566,46 +920,31 @@
     });
   }
 
-  function demo(lenis) {
-    const { tl, tabs } = buildDemo();
+  function demo() {
+    buildDemo(true);
     gsap.from(".win", {
       y: 80, scale: 0.94, rotateX: 8, transformPerspective: 1400, autoAlpha: 0, duration: 1.4, ease: "expo.out",
       scrollTrigger: { trigger: ".demo-pin", start: "top 85%", once: true },
     });
-
-    const mm = gsap.matchMedia();
-    mm.add("(min-width: 901px)", () => {
-      const st = ScrollTrigger.create({
-        trigger: ".demo-pin", start: "top top+=60", end: () => "+=" + window.innerHeight * 3,
-        pin: true, scrub: 1, animation: tl, anticipatePin: 1, invalidateOnRefresh: true,
-      });
-      const onTab = (i) => lenis.scrollTo(st.start + (st.end - st.start) * ((STEP_AT[i] + 0.05) / STEP_AT[4]), { duration: 1.4 });
-      const handlers = tabs.map((tab, i) => { const h = () => onTab(i); tab.addEventListener("click", h); return h; });
-      return () => tabs.forEach((tab, i) => tab.removeEventListener("click", handlers[i]));
-    });
-    mm.add("(max-width: 900px)", () => {
-      const st = ScrollTrigger.create({ trigger: ".win", start: "top 70%", once: true, onEnter: () => tl.play(0) });
-      const handlers = tabs.map((tab, i) => { const h = () => tl.play(STEP_AT[i]); tab.addEventListener("click", h); return h; });
-      return () => { st.kill(); tl.pause(0); tabs.forEach((tab, i) => tab.removeEventListener("click", handlers[i])); };
-    });
+    gsap.from(".side-list .row", { x: -24, autoAlpha: 0, duration: 0.7, stagger: 0.07, ease: "power3.out", scrollTrigger: { trigger: ".demo-pin", start: "top 70%", once: true } });
   }
 
   function compare() {
     const tl = gsap.timeline({ scrollTrigger: { trigger: ".cmp", start: "top 75%", once: true } });
     tl.from(".cmp-panel", { y: 50, autoAlpha: 0, duration: 1, ease: "expo.out", stagger: 0.15 }, 0)
       .to(".cmp .tl", { "--p": 1, duration: 1.8, ease: "power2.inOut" }, 0.3)
-      .from(".cmp-slow .tl li", { x: -14, autoAlpha: 0, duration: 0.5, stagger: 0.32, ease: "power2.out" }, 0.4)
-      .from(".cmp-fast .tl li", { x: -14, autoAlpha: 0, duration: 0.35, stagger: 0.1, ease: "power2.out" }, 0.4)
+      .from(".cmp-slow .tl li", { x: -14, autoAlpha: 0, duration: 0.5, stagger: 0.3, ease: "power2.out" }, 0.4)
+      .from(".cmp-fast .tl li", { x: -14, autoAlpha: 0, duration: 0.35, stagger: 0.12, ease: "power2.out" }, 0.4)
       .to(".cmp-fast", { "--p": 1, duration: 0.9, ease: "power3.inOut" }, 0.6)
-      .add(countTo($(".cmp-slow .cmp-n"), 93, 2), 0.5)
-      .add(countTo($(".cmp-fast .cmp-n"), 1, 0.5), 0.5);
+      .add(countTo($(".cmp-slow .cmp-n"), 5, 1.6), 0.5)
+      .add(countTo($(".cmp-fast .cmp-n"), 2, 0.8), 0.5);
   }
 
   function how() {
     const setHow = buildHow(true);
     setHow(0);
     drawIn($$(".how-svg .corners path, .how-svg .paths path"), {
-      duration: 1.4, stagger: 0.08, scrollTrigger: { trigger: ".how-svg", start: "top 80%", once: true },
+      duration: 1.4, stagger: 0.06, scrollTrigger: { trigger: ".how-svg", start: "top 80%", once: true },
     });
     gsap.from(".how-svg .node", {
       autoAlpha: 0, scale: 0.85, transformOrigin: "50% 50%", duration: 0.8, ease: "back.out(1.6)", stagger: 0.06,
@@ -615,9 +954,9 @@
     const mm = gsap.matchMedia();
     mm.add("(min-width: 901px)", () => {
       ScrollTrigger.create({
-        trigger: ".how-pin", start: "top top+=72", end: () => "+=" + window.innerHeight * 1.8,
+        trigger: ".how-pin", start: "top top+=72", end: () => "+=" + window.innerHeight * 2.2,
         pin: true, anticipatePin: 1, invalidateOnRefresh: true,
-        onUpdate: (self) => setHow(Math.min(2, Math.floor(self.progress * 3))),
+        onUpdate: (self) => setHow(Math.min(3, Math.floor(self.progress * 4))),
       });
     });
     mm.add("(max-width: 900px)", () => {
@@ -628,7 +967,7 @@
     });
   }
 
-  // Cards enter, then a "working" highlight passes from role to role while the section is on screen.
+  // Tool cards enter, then a "granted" highlight passes from tool to tool while the section is on screen.
   function agents() {
     const cards = $$(".agent");
     gsap.from(cards, { y: 50, autoAlpha: 0, duration: 1, ease: "expo.out", stagger: 0.08, scrollTrigger: { trigger: ".agents-grid", start: "top 80%", once: true } });
@@ -643,6 +982,7 @@
   }
 
   function trust() {
+    gsap.from(".try", { y: 40, autoAlpha: 0, duration: 1, ease: "expo.out", scrollTrigger: { trigger: ".trust-head", start: "top 80%", once: true } });
     const mm = gsap.matchMedia();
     mm.add("(min-width: 901px)", () => {
       const trustSec = $(".trust");
@@ -757,7 +1097,7 @@
           label.textContent = "You're on the list";
           input.value = "";
           say("Thanks. We will email you when early access opens.", "ok");
-          if (window.gsap && !reduce) gsap.fromTo(btn, { scale: 0.92 }, { scale: 1, duration: 0.6, ease: "back.out(3)" });
+          if (motionOK()) gsap.fromTo(btn, { scale: 0.92 }, { scale: 1, duration: 0.6, ease: "back.out(3)" });
         } catch (err) {
           btn.disabled = false;
           label.textContent = "Join waitlist";
