@@ -1,0 +1,32 @@
+#run { position: relative; overflow: hidden; }
+.run-stage { height: 100vh; position: relative; display: flex; align-items: center; }
+
+.run-mark {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; justify-content: center; gap: 3rem;
+  overflow: hidden; pointer-events: none;
+}
+.run-mark-row {
+  white-space: nowrap;
+  font-size: clamp(64px, 10vw, 160px);
+  line-height: 1; letter-spacing: -0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--dim);
+  font-variation-settings: 'wght' 800, 'wdth' 110;
+  opacity: 0.5; will-change: transform;
+}
+
+.run-track { display: flex; gap: 2.2rem; padding: 0 8vw; position: relative; z-index: 2; will-change: transform; perspective: 1500px; }
+.cmd-card {
+  flex: 0 0 auto; width: min(360px, 34vw);
+  border: 1px solid var(--fg); background: var(--bg);
+  padding: 2rem; display: flex; flex-direction: column; gap: 1.3rem;
+  will-change: transform;
+}
+.cc-c { font-size: 14px; letter-spacing: 0.06em; }
+.cc-d { font-size: clamp(18px, 1.6vw, 26px); font-variation-settings: 'wght' 600, 'wdth' 96; }
+
+.run-cap {
+  position: absolute; bottom: 6vh; left: 8vw; z-index: 3;
+  font-size: 11px; letter-spacing: 0.3em; color: var(--dim);
+}

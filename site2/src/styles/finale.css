@@ -1,0 +1,66 @@
+#finale { position: relative; }
+.fin-stage {
+  height: 100vh; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.fin-frame {
+  position: absolute; width: 140vmin; height: 140vmin;
+  border: 1px solid var(--line); border-radius: 50%;
+  will-change: transform;
+}
+.fin-frame::before {
+  content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
+  width: 1px; background: var(--line);
+  transform: scaleY(var(--fy, 1)); transform-origin: 50% 0;
+}
+.fin-frame::after {
+  content: ''; position: absolute; top: 50%; left: 0; right: 0;
+  height: 1px; background: var(--line);
+  transform: scaleX(var(--fx, 1)); transform-origin: 0 50%;
+}
+/* one-shot scanner that crosses the stage as the finale enters */
+.fin-sweep {
+  position: absolute; top: 6vh; bottom: 6vh; left: 0; width: 2px;
+  background: linear-gradient(to bottom, transparent, var(--fg) 14%, var(--fg) 86%, transparent);
+  opacity: 0; pointer-events: none;
+  transform: translateX(-8vw);
+  will-change: transform, opacity;
+}
+.fin-wrap { position: relative; z-index: 2; text-align: center; padding: 0 5vw; }
+.fin-l1 {
+  font-size: clamp(36px, 6vw, 112px); line-height: 1.02;
+  max-width: 19ch; margin: 0 auto; overflow: hidden;
+  text-wrap: balance;
+  /* headroom inside the mask so the entrance overshoot never clips
+     the top of a glyph; the negative margin keeps layout identical */
+  padding-top: 0.14em; margin-top: -0.14em;
+  padding-bottom: 0.06em; margin-bottom: -0.06em;
+}
+.fin-l1 .wd { display: inline-block; white-space: nowrap; }
+.fin-l1 .ch { display: inline-block; will-change: transform, opacity; }
+
+/* reduced motion — the stage is already assembled */
+@media (prefers-reduced-motion: reduce) {
+  .fin-frame { --fx: 1; --fy: 1; }
+  .ft-mark .ch { transition: none; }
+}
+
+#footer {
+  padding: 8vh 6vw;
+  display: flex; flex-direction: column; gap: 1rem;
+  border-top: 1px solid var(--line);
+}
+.ft-mark {
+  font-size: clamp(110px, 22vw, 400px);
+  line-height: 0.82; letter-spacing: -0.02em;
+  color: transparent; -webkit-text-stroke: 1.5px var(--fg);
+  overflow: hidden; margin-bottom: 3vh;
+  /* uppercase wordmark: nowrap + a slightly condensed width axis so
+     all six caps sit on one line inside the 6vw footer gutters */
+  white-space: nowrap;
+  font-variation-settings: 'wght' var(--wght), 'wdth' 82;
+}
+.ft-mark .ch { display: inline-block; transition: color 0.35s cubic-bezier(0.7, 0, 0.3, 1); }
+.ft-mark .ch.hot { color: var(--fg); }
+.ft-row { font-size: 11px; letter-spacing: 0.24em; color: var(--dim); }

@@ -1,0 +1,90 @@
+#hero {
+  position: relative; min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.hero-glyph {
+  position: absolute; left: 50%; top: 50%;
+  width: min(46vw, 560px); aspect-ratio: 1;
+  pointer-events: none; will-change: transform;
+}
+.hero-glyph svg { width: 100%; height: 100%; overflow: visible; }
+.hg-fill { fill: var(--fg); opacity: 0.9; }
+.hg-ring { fill: none; stroke: var(--fg); stroke-width: 1.5; }
+
+.hero-inner {
+  position: relative; z-index: 2; text-align: center;
+  padding: 0 4vw; mix-blend-mode: difference; color: #fff;
+}
+.hero-meta { font-size: 12px; letter-spacing: 0.3em; opacity: 0.55; margin-bottom: 2.4rem; }
+#hero-mark {
+  font-size: clamp(96px, 19vw, 330px);
+  line-height: 0.86; letter-spacing: -0.015em;
+  white-space: nowrap; /* uppercase caps are wide — never break the word */
+  will-change: transform;
+}
+#hero-mark .ltr { display: inline-block; min-width: 0.1em; }
+.hero-tag {
+  font-size: clamp(19px, 2.6vw, 42px); line-height: 1.15;
+  margin: 3rem auto 0; max-width: 40ch;
+  font-variation-settings: 'wght' var(--wght), 'wdth' var(--wdth);
+}
+.hero-pipe { margin-top: 2.6rem; font-size: 12px; letter-spacing: 0.28em; opacity: 0.55; }
+
+/* ── store / download CTAs — diagonal corners: store bottom-left,
+   download top-right, hero and finale ─────────────────────── */
+.cta-row { display: block; }
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 13px; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 0 34px; min-height: 64px;
+  border: 1px solid var(--fg);
+  background: none; color: var(--fg);
+  text-decoration: none; white-space: nowrap;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+  will-change: transform;
+}
+.cta-btn .cta-ico {
+  font-size: 13px; line-height: 1; opacity: 0.75;
+  transition: transform 0.25s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.2s;
+}
+.cta-btn:hover { background: var(--fg); color: var(--bg); }
+.cta-btn:hover .cta-ico { transform: translate(2px, -2px); opacity: 1; }
+.cta-btn:focus-visible { outline: 1px solid var(--fg); outline-offset: 3px; }
+.cta-primary { background: var(--fg); color: var(--bg); }
+.cta-primary .cta-ico { opacity: 1; }
+.cta-primary:hover { background: none; color: var(--fg); }
+.hero-cta,
+.fin-cta {
+  position: absolute; inset: 0;
+  z-index: 4; pointer-events: none;
+}
+.hero-cta .cta-btn,
+.fin-cta .cta-btn { position: absolute; pointer-events: auto; }
+.hero-cta .cta-primary { left: 4vw; bottom: 82px; }
+.hero-cta .cta-btn:not(.cta-primary) { right: 4vw; top: max(7vh, 74px); }
+.fin-cta .cta-primary { left: 5vw; bottom: 8vh; }
+.fin-cta .cta-btn:not(.cta-primary) { right: 5vw; top: max(7vh, 74px); }
+/* short viewports: drop the decorative pipe so the pinned CTAs
+   never sit on top of hero copy */
+@media (max-height: 899px) {
+  .hero-pipe { display: none; }
+}
+@media (max-height: 720px) {
+  .hero-meta { margin-bottom: 1.2rem; }
+  #hero-mark { font-size: clamp(80px, 14vw, 270px); }
+  .hero-tag { margin-top: 1.3rem; font-size: clamp(15px, 1.9vw, 32px); }
+  .cta-btn { font-size: 12px; padding: 0 24px; min-height: 54px; }
+}
+
+.ticker {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  border-top: 1px solid var(--line); padding: 14px 0; overflow: hidden;
+}
+.ticker-track {
+  display: inline-flex; gap: 2.2rem; white-space: nowrap;
+  font-size: 12px; letter-spacing: 0.24em; will-change: transform;
+}
+.ticker-track span { display: inline-block; }
+.tk-mark, .tk-sep { color: var(--dim); }

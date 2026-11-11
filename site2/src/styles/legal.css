@@ -1,0 +1,238 @@
+/* ── legal pages — privacy + terms ───────────────────────────
+   the same film as the landing: black stage, Archivo on the
+   display axes, mono micro-labels, hairline rules, live grain,
+   the arrow cursor, a marquee band and the giant outlined
+   SHADOW footer. a document, not an experience: it reads on
+   any screen — no gate, no pin, no loader.
+────────────────────────────────────────────────────────── */
+
+:root {
+  --bg: #000;
+  --fg: #fff;
+  --dim: #8a8a8a;
+  --line: rgba(255, 255, 255, 0.16);
+  --font-display: 'Archivo Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; cursor: none; }
+html { background: #000; overflow-x: clip; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-display);
+  font-variation-settings: 'wght' 500, 'wdth' 100;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+::selection { background: var(--fg); color: var(--bg); }
+a { color: inherit; }
+.mono { font-family: var(--font-mono); font-variation-settings: normal; font-weight: 400; }
+.display { font-variation-settings: 'wght' 800, 'wdth' 96; }
+
+/* ── chrome: grain, cursor, progress, topbar ─────────────── */
+#grain { position: fixed; inset: 0; z-index: 90; pointer-events: none; opacity: 0.08; }
+#cursor {
+  position: fixed; left: 0; top: 0; width: 26px; height: 26px;
+  z-index: 300; pointer-events: none;
+  margin: -5px 0 0 -2px; mix-blend-mode: difference; will-change: transform;
+}
+#cursor svg { width: 100%; height: 100%; fill: #fff; display: block; }
+#cursor-label {
+  position: fixed; left: 0; top: 0; z-index: 299; pointer-events: none;
+  mix-blend-mode: difference; color: #fff;
+  font-size: 10px; letter-spacing: 0.3em; opacity: 0; will-change: transform;
+}
+#cursor-trail {
+  position: fixed; inset: 0; z-index: 298; pointer-events: none;
+  mix-blend-mode: difference;
+}
+#cursor-trail svg {
+  position: absolute; left: 0; top: 0; width: 15px; height: 15px;
+  fill: #fff; opacity: 0.5; will-change: transform, opacity;
+}
+
+#lg-progress {
+  position: fixed; left: 0; top: 0; width: 100%; height: 2px;
+  background: var(--fg); z-index: 210;
+  transform: scaleX(0); transform-origin: 0 50%;
+  mix-blend-mode: difference;
+}
+
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  display: flex; justify-content: space-between; align-items: center; gap: 1.5rem;
+  padding: 22px 34px; mix-blend-mode: difference; color: #fff;
+}
+.tb-left {
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  font-size: 12px; letter-spacing: 0.18em; text-decoration: none;
+  font-variation-settings: 'wght' 600, 'wdth' 100;
+}
+.tb-left svg { width: 17px; height: 17px; }
+.tb-nav {
+  display: flex; align-items: center; gap: 1.7rem;
+  font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+}
+.tb-nav a { text-decoration: none; color: rgba(255, 255, 255, 0.55); transition: color 0.2s; }
+.tb-nav a:hover, .tb-nav a[aria-current='page'] { color: #fff; }
+.tb-nav a[aria-current='page']::after {
+  content: ''; display: block; height: 1px; margin-top: 5px; background: currentColor;
+}
+.tb-back {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  padding: 8px 14px; color: #fff !important;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.tb-back:hover { background: #fff; color: #000 !important; border-color: #fff; }
+
+/* ── hero head ───────────────────────────────────────────── */
+.lg-hero { padding: 20vh 6vw 0; }
+.lg-kicker {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 2rem;
+  padding-bottom: 1.1rem; border-bottom: 1px solid var(--line);
+  font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+  color: var(--dim);
+}
+.lg-h1 {
+  margin-top: calc(7vh - 0.08em);
+  font-size: clamp(96px, 22vw, 560px);
+  line-height: 0.92; letter-spacing: -0.045em;
+  white-space: nowrap; /* one line, always */
+  overflow: hidden; padding: 0.08em 0 0.18em; /* room for caps + descenders */
+}
+.lg-h1--long { font-size: clamp(52px, 13.3vw, 360px); }
+.lg-h1 .ch { display: inline-block; }
+
+.lg-hero-foot {
+  display: flex; justify-content: space-between; align-items: flex-end; gap: 2rem;
+  margin-top: 7vh; padding-bottom: 3.4rem;
+}
+.lg-meta {
+  display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem;
+  font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--dim);
+}
+.lg-meta span { display: inline-flex; align-items: center; gap: 1.5rem; }
+.lg-meta span + span::before { content: '·'; color: var(--line); }
+
+.cta-btn {
+  display: inline-flex; align-items: center; gap: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 0 26px; min-height: 56px;
+  border: 1px solid var(--fg);
+  background: none; color: var(--fg);
+  text-decoration: none; white-space: nowrap;
+  transition: background 0.18s, color 0.18s;
+  will-change: transform;
+}
+.cta-btn .cta-ico {
+  font-size: 12px; line-height: 1; opacity: 0.75;
+  transition: transform 0.25s cubic-bezier(0.7, 0, 0.3, 1), opacity 0.2s;
+}
+.cta-btn:hover { background: var(--fg); color: var(--bg); }
+.cta-btn:hover .cta-ico { transform: translate(2px, -2px); opacity: 1; }
+.cta-btn:focus-visible { outline: 1px solid var(--fg); outline-offset: 3px; }
+
+/* ── marquee band ────────────────────────────────────────── */
+.lg-ticker {
+  position: relative; overflow: hidden;
+  border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+  padding: 14px 0;
+}
+.lg-ticker-track {
+  display: inline-flex; white-space: nowrap;
+  font-size: 12px; letter-spacing: 0.24em;
+  will-change: transform;
+  animation: lgMarquee 38s linear infinite;
+}
+.lg-tick-group {
+  display: inline-flex; align-items: baseline; gap: 2.2rem;
+  padding-right: 2.2rem;
+}
+.tk-mark, .tk-sep { color: var(--dim); }
+@keyframes lgMarquee { to { transform: translateX(-50%); } }
+
+/* ── document body: numbered spec rows ───────────────────── */
+.lg-body { padding: 12vh 6vw 0; }
+.lrow {
+  display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 2.4rem;
+  padding: 3.1rem 0;
+  border-top: 1px solid var(--line);
+}
+.lrow:last-child { border-bottom: 1px solid var(--line); }
+.lkey {
+  font-size: 11px; letter-spacing: 0.24em; color: var(--dim);
+  padding-top: 0.6rem; transition: color 0.3s;
+}
+.lval { transition: transform 0.45s cubic-bezier(0.7, 0, 0.3, 1); }
+.lval h2 {
+  font-size: clamp(21px, 2.15vw, 34px);
+  line-height: 1.12; letter-spacing: -0.02em;
+  font-variation-settings: 'wght' 640, 'wdth' 96;
+  padding-bottom: 0.08em;
+}
+.lval p {
+  margin-top: 0.9rem; max-width: 64ch;
+  font-size: clamp(15px, 1.05vw, 18px); line-height: 1.66;
+  color: var(--dim);
+  font-variation-settings: 'wght' 450, 'wdth' 100;
+}
+.lrow:hover .lkey { color: var(--fg); }
+.lrow:hover .lval { transform: translateX(8px); }
+
+/* row reveal — only armed once legal.js is live, so the doc
+   is fully readable even if scripts never run */
+body.anim .lrow {
+  opacity: 0; transform: translateY(26px);
+  transition: opacity 0.85s cubic-bezier(0.2, 0.7, 0.2, 1),
+    transform 0.85s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+body.anim .lrow.in { opacity: 1; transform: none; }
+
+/* ── footer: outlined wordmark + mono rows ───────────────── */
+#lg-footer {
+  margin-top: 14vh; padding: 8vh 6vw;
+  border-top: 1px solid var(--line);
+  display: flex; flex-direction: column; gap: 1rem;
+}
+.lg-mark {
+  font-size: clamp(110px, 22vw, 400px);
+  line-height: 0.82; letter-spacing: -0.02em;
+  color: transparent; -webkit-text-stroke: 1.5px var(--fg);
+  overflow: hidden; margin-bottom: 3vh;
+  white-space: nowrap;
+  font-variation-settings: 'wght' 800, 'wdth' 82;
+}
+.lg-mark .ch { display: inline-block; transition: color 0.35s cubic-bezier(0.7, 0, 0.3, 1); }
+.lg-mark .ch.hot { color: var(--fg); }
+.lg-row { font-size: 11px; letter-spacing: 0.24em; color: var(--dim); }
+.lg-row a { text-decoration: none; transition: color 0.2s; }
+.lg-row a:hover { color: var(--fg); }
+
+/* ── responsive ──────────────────────────────────────────── */
+@media (max-height: 780px) {
+  .lg-hero { padding-top: 16vh; }
+  .lg-h1 { margin-top: 5vh; }
+  .lg-hero-foot { margin-top: 5vh; padding-bottom: 2.4rem; }
+}
+@media (max-width: 1100px) {
+  .lrow { grid-template-columns: 3.4rem minmax(0, 1fr); gap: 1.6rem; }
+  .tb-nav { gap: 1.2rem; }
+}
+@media (max-width: 760px) {
+  #topbar { padding: 16px 20px; }
+  .tb-nav a:not(.tb-back) { display: none; }
+  .lg-hero { padding: 15vh 7vw 0; }
+  .lg-h1 { font-size: clamp(56px, 15vw, 130px); }
+  .lg-h1--long { font-size: clamp(36px, 9.4vw, 86px); }
+  .lg-hero-foot { flex-direction: column; align-items: flex-start; gap: 1.6rem; }
+  .lg-body { padding: 9vh 7vw 0; }
+  .lrow { grid-template-columns: minmax(0, 1fr); gap: 0.7rem; padding: 2.2rem 0; }
+  .lg-mark { -webkit-text-stroke-width: 1px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lg-ticker-track { animation: none; }
+  body.anim .lrow { opacity: 1; transform: none; }
+}

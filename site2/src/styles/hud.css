@@ -1,0 +1,21 @@
+#hud {
+  position: fixed; left: 28px; top: 50%;
+  transform: translateY(-50%);
+  z-index: 150; pointer-events: none;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 12px;
+  mix-blend-mode: difference; color: #fff;
+}
+.hud-rail {
+  position: absolute; left: -16px; top: -34px; bottom: -34px;
+  width: 2px; background: rgba(255, 255, 255, 0.18);
+}
+#hud-fill {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 100%;
+  background: #fff; transform-origin: bottom; transform: scaleY(0);
+  display: block;
+}
+#hud-glyph { width: 42px; height: 42px; overflow: visible; }
+#hud-glyph path { stroke: #fff; stroke-width: 5; fill: none; stroke-linejoin: round; }
+.hud-num { font-size: 11px; letter-spacing: 0.26em; height: 15px; overflow: hidden; display: block; }
+.hud-num span { display: inline-block; }
+.hud-lab { font-size: 9px; letter-spacing: 0.22em; opacity: 0.55; white-space: nowrap; }
