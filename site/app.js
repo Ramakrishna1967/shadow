@@ -19,6 +19,7 @@
   initSkills();
   buildClockTicks();
   navTheme();
+  initStoreTracking();
 
   if (!window.gsap || !window.ScrollTrigger || !window.SplitText) {
     root.classList.remove("boot-on");
@@ -1052,6 +1053,19 @@
     const update = () => nav.classList.toggle("is-dark", hero.getBoundingClientRect().bottom <= 64);
     window.addEventListener("scroll", update, { passive: true });
     update();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Store clicks: Web Analytics counts real download intent             */
+  /* ------------------------------------------------------------------ */
+
+  // One delegated listener, so it covers every Store button on the page. Silent if the script is blocked.
+  function initStoreTracking() {
+    document.addEventListener("click", (e) => {
+      const link = e.target instanceof Element && e.target.closest('a[href*="apps.microsoft.com"]');
+      if (!link || typeof window.va !== "function") return;
+      window.va("event", { name: "store_download_click" });
+    });
   }
 
   /* ------------------------------------------------------------------ */
