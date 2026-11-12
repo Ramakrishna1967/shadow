@@ -22,6 +22,7 @@ import './styles/faq.css';
 import './styles/finale.css';
 import './styles/machine.css';
 import './styles/hud.css';
+import './styles/mobile.css';
 
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -43,15 +44,47 @@ import { initFaq } from './js/faq.js';
 import { initFinale } from './js/finale.js';
 import { initToggle } from './js/toggle.js';
 import { initHud } from './js/hud.js';
+import { isMobile } from './js/device.js';
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
 const desktop =
   !matchMedia('(pointer: coarse)').matches && window.innerWidth >= 1024;
 
-if (!desktop) {
-  /* mobile wall — the #gate overlay is already up via CSS */
+if (!desktop && !isMobile) {
+  /* coarse pointer that still reports hover (matches the gate
+     media query but not the touch layout) — original wall */
   document.getElementById('loader').style.display = 'none';
+} else if (isMobile) {
+  /* ── mobile / touch ────────────────────────────────────────
+     the loader is hidden immediately (CSS hides it too).
+     no Lenis, no cursor, no field, grain, tilt or HUD; the
+     chapters reveal once instead of pinning (chapters.js),
+     the command run stacks instead of pinning (run.js).
+     same modules, same content, touch layout. */
+  document.getElementById('loader').style.display = 'none';
+
+  const fontsP = Promise.race([
+    Promise.all([
+      document.fonts.load("800 100px 'Archivo Variable'"),
+      document.fonts.load("400 16px 'JetBrains Mono'"),
+    ]),
+    new Promise((res) => setTimeout(res, 1500)),
+  ]);
+
+  fontsP.then(() => {
+    initChapters();
+    initGrid();
+    initRun();
+    initChat();
+    initFaq();
+    initFinale();
+    initToggle();
+    heroIn();
+    ScrollTrigger.refresh();
+  });
+
+  document.fonts.ready.then(() => ScrollTrigger.refresh());
 } else {
   /* one scroll brain: Lenis glide synced into gsap's ticker */
   const lenis = new Lenis({ duration: 1.15, smoothWheel: true });

@@ -2,6 +2,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SplitText } from 'gsap/SplitText';
 import { splitChars } from './utils.js';
+import { isMobile } from './device.js';
 
 /* ── chapters ───────────────────────────────────────────────
    each chapter pins for +190% of viewport and is DRAGGED
@@ -13,6 +14,9 @@ import { splitChars } from './utils.js';
 
 /* the melt — one shared displacement filter, guarded per target */
 function melt(target) {
+  /* the displacement filter is a full-viewport SVG pass — skip it
+     on touch hardware, the polarity cut still happens */
+  if (isMobile) return;
   const el = target.querySelector('.ch-stage') || target;
   if (el._melting) return;
   el._melting = true;
@@ -93,6 +97,15 @@ export function initChapters() {
 }
 
 function pinned(ch, build) {
+  if (isMobile) {
+    /* touch: no pin, no scrub. the same timeline is built, but
+       it plays once when the chapter enters the viewport. */
+    const tl = gsap.timeline({
+      scrollTrigger: { trigger: ch, start: 'top 78%', once: true },
+    });
+    build(tl, ch);
+    return tl;
+  }
   const tl = gsap.timeline({
     scrollTrigger: {
       trigger: ch,

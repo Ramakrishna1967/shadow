@@ -1,6 +1,7 @@
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { vel } from './velocity.js';
+import { isMobile } from './device.js';
 
 /* ── command run ────────────────────────────────────────────
    section pins and the card train races horizontally,
@@ -10,6 +11,10 @@ import { vel } from './velocity.js';
 ────────────────────────────────────────────────────────── */
 
 export function initRun() {
+  /* touch: the section is a vertical stack in mobile.css —
+     no horizontal pin, no velocity marquees */
+  if (isMobile) return;
+
   /* velocity marquees */
   document.querySelectorAll('.run-mark-row').forEach((row) => {
     while (row.scrollWidth < innerWidth * 2.2) row.innerHTML += row.innerHTML;
